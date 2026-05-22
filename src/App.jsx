@@ -50,6 +50,29 @@ function loadImage(src) {
   });
 }
 
+function drawGuideGrid(context, width, height) {
+  context.save();
+  context.strokeStyle = "rgba(147, 154, 163, 0.75)";
+  context.lineWidth = 6;
+  context.setLineDash([32, 32]);
+  context.beginPath();
+
+  for (let column = 1; column < 4; column += 1) {
+    const x = (width / 4) * column;
+    context.moveTo(x, 0);
+    context.lineTo(x, height);
+  }
+
+  for (let row = 1; row < 6; row += 1) {
+    const y = (height / 6) * row;
+    context.moveTo(0, y);
+    context.lineTo(width, y);
+  }
+
+  context.stroke();
+  context.restore();
+}
+
 export default function App() {
   const boardRef = useRef(null);
   const toastTimerRef = useRef(null);
@@ -239,6 +262,7 @@ export default function App() {
     const context = canvas.getContext("2d");
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, width, height);
+    drawGuideGrid(context, width, height);
 
     for (const item of placedItems) {
       const asset = assetMap.get(item.assetId);
