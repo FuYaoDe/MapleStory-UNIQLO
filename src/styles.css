@@ -118,9 +118,20 @@ button {
   touch-action: pan-y;
 }
 
+.board::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23939aa3' stroke-width='1.5' stroke-dasharray='8 8' opacity='0.75'%3E%3Cpath d='M100 0V400M200 0V400M300 0V400M0 66.667H400M0 133.333H400M0 200H400M0 266.667H400M0 333.333H400'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  content: "";
+  pointer-events: none;
+}
+
 .placed-item {
   position: absolute;
   display: grid;
+  z-index: 2;
   place-items: center;
   cursor: grab;
   user-select: none;

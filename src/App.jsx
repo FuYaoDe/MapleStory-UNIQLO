@@ -6,7 +6,8 @@ const modules = import.meta.glob("../extracted_components/*.png", {
   import: "default",
 });
 
-const BOARD_UNITS = 1000;
+const BOARD_WIDTH_UNITS = 1000;
+const BOARD_HEIGHT_UNITS = 1000;
 const DEFAULT_ITEM_WIDTH = 160;
 
 const initialAssets = Object.entries(modules)
@@ -30,8 +31,8 @@ function clamp(value, min, max) {
 function pointerToBoard(event, boardElement) {
   const rect = boardElement.getBoundingClientRect();
   return {
-    x: ((event.clientX - rect.left) / rect.width) * BOARD_UNITS,
-    y: ((event.clientY - rect.top) / rect.height) * BOARD_UNITS,
+    x: ((event.clientX - rect.left) / rect.width) * BOARD_WIDTH_UNITS,
+    y: ((event.clientY - rect.top) / rect.height) * BOARD_HEIGHT_UNITS,
     inside:
       event.clientX >= rect.left &&
       event.clientX <= rect.right &&
@@ -162,7 +163,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedId]);
 
-  function addItem(asset, boardX = BOARD_UNITS / 2, boardY = BOARD_UNITS / 2) {
+  function addItem(asset, boardX = BOARD_WIDTH_UNITS / 2, boardY = BOARD_HEIGHT_UNITS / 2) {
     const id = `${asset.id}-${crypto.randomUUID()}`;
     const width = DEFAULT_ITEM_WIDTH;
     const height = width / asset.aspect;
@@ -181,8 +182,8 @@ export default function App() {
   function addItemAtRandomPosition(asset) {
     const width = DEFAULT_ITEM_WIDTH;
     const height = width / asset.aspect;
-    const maxX = Math.max(0, BOARD_UNITS - width);
-    const maxY = Math.max(0, BOARD_UNITS - height);
+    const maxX = Math.max(0, BOARD_WIDTH_UNITS - width);
+    const maxY = Math.max(0, BOARD_HEIGHT_UNITS - height);
     addItem(asset, Math.random() * maxX + width / 2, Math.random() * maxY + height / 2);
   }
 
@@ -231,12 +232,13 @@ export default function App() {
 
   async function downloadJpg() {
     const canvas = document.createElement("canvas");
-    const size = 1600;
-    canvas.width = size;
-    canvas.height = size;
+    const width = 1600;
+    const height = 1600;
+    canvas.width = width;
+    canvas.height = height;
     const context = canvas.getContext("2d");
     context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, size, size);
+    context.fillRect(0, 0, width, height);
 
     for (const item of placedItems) {
       const asset = assetMap.get(item.assetId);
@@ -245,11 +247,11 @@ export default function App() {
       }
 
       const image = await loadImage(asset.src);
-      const x = (item.x / BOARD_UNITS) * size;
-      const y = (item.y / BOARD_UNITS) * size;
-      const width = (item.width / BOARD_UNITS) * size;
-      const height = width / asset.aspect;
-      context.drawImage(image, x, y, width, height);
+      const x = (item.x / BOARD_WIDTH_UNITS) * width;
+      const y = (item.y / BOARD_HEIGHT_UNITS) * height;
+      const itemWidth = (item.width / BOARD_WIDTH_UNITS) * width;
+      const itemHeight = itemWidth / asset.aspect;
+      context.drawImage(image, x, y, itemWidth, itemHeight);
     }
 
     const link = document.createElement("a");
@@ -282,7 +284,7 @@ export default function App() {
           ref={boardRef}
           className="board"
           onPointerDown={() => setSelectedId(null)}
-          aria-label="Square composition area"
+          aria-label="Square composition area with 4 by 6 guide grid"
         >
           {placedItems.map((item) => {
             const asset = assetMap.get(item.assetId);
@@ -297,10 +299,10 @@ export default function App() {
                 key={item.id}
                 className={`placed-item ${isSelected ? "selected" : ""}`}
                 style={{
-                  left: `${(item.x / BOARD_UNITS) * 100}%`,
-                  top: `${(item.y / BOARD_UNITS) * 100}%`,
-                  width: `${(item.width / BOARD_UNITS) * 100}%`,
-                  height: `${(height / BOARD_UNITS) * 100}%`,
+                  left: `${(item.x / BOARD_WIDTH_UNITS) * 100}%`,
+                  top: `${(item.y / BOARD_HEIGHT_UNITS) * 100}%`,
+                  width: `${(item.width / BOARD_WIDTH_UNITS) * 100}%`,
+                  height: `${(height / BOARD_HEIGHT_UNITS) * 100}%`,
                 }}
                 onPointerDown={(event) => beginMove(event, item)}
               >
