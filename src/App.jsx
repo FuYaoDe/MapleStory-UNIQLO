@@ -49,6 +49,14 @@ function loadImage(src) {
   });
 }
 
+function scrollBoardIntoView(boardElement) {
+  boardElement?.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+    inline: "nearest",
+  });
+}
+
 export default function App() {
   const boardRef = useRef(null);
   const palettePressTimerRef = useRef(null);
@@ -113,6 +121,7 @@ export default function App() {
             window.clearTimeout(palettePressTimerRef.current);
             palettePressTimerRef.current = null;
             event.preventDefault();
+            scrollBoardIntoView(boardRef.current);
             setInteraction({ ...interaction, locked: true, hasMoved: true });
             setDragPreview({ asset: interaction.asset, x: event.clientX, y: event.clientY });
           }
@@ -244,13 +253,16 @@ export default function App() {
     });
 
     if (isTouch) {
+      const pointerX = event.clientX;
+      const pointerY = event.clientY;
       palettePressTimerRef.current = window.setTimeout(() => {
+        scrollBoardIntoView(boardRef.current);
         setInteraction((current) =>
           current?.type === "palette" && !current.cancelled
             ? { ...current, locked: true, hasMoved: true }
             : current,
         );
-        setDragPreview({ asset, x: event.clientX, y: event.clientY });
+        setDragPreview({ asset, x: pointerX, y: pointerY });
       }, 220);
     } else {
       setDragPreview({ asset, x: event.clientX, y: event.clientY });

@@ -13,7 +13,7 @@ OUT_DIR = Path(__file__).resolve().parents[1] / "extracted_components"
 # Keep a little grey margin so the edge-connected background can be removed.
 COMPONENTS = [
     ("01_girl_glasses", (135, 298, 268, 406)),
-    ("02_girl_angry", (274, 300, 394, 407)),
+    ("02_girl_angry", (266, 292, 402, 418)),
     ("03_girl_full_body", (402, 276, 530, 406)),
     ("04_boy_face", (543, 300, 666, 407)),
     ("05_girl_star_eyes", (680, 286, 810, 414)),
@@ -32,7 +32,7 @@ COMPONENTS = [
     ("18_orange_mushroom", (786, 614, 931, 755)),
     ("19_green_buddy", (137, 790, 260, 916)),
     ("20_pig", (274, 785, 410, 911)),
-    ("21_boar", (419, 786, 550, 910)),
+    ("21_boar", (408, 776, 562, 920)),
     ("22_red_snail", (563, 790, 664, 897)),
     ("23_blue_snail", (679, 791, 794, 897)),
     ("24_green_snake", (815, 786, 933, 909)),
@@ -41,11 +41,11 @@ COMPONENTS = [
     ("27_rope_platform", (424, 942, 550, 1090)),
     ("28_mushroom_grass", (568, 946, 691, 1076)),
     ("29_mushroom_house", (694, 943, 825, 1078)),
-    ("30_red_leaf", (827, 947, 939, 1054)),
+    ("30_red_leaf", (816, 936, 952, 1068)),
     ("31_coin", (139, 1128, 264, 1260)),
     ("32_red_potion", (278, 1122, 405, 1252)),
-    ("33_blue_potion", (413, 1114, 548, 1245)),
-    ("34_money_bag", (570, 1118, 696, 1244)),
+    ("33_blue_potion", (413, 1106, 558, 1258)),
+    ("34_money_bag", (558, 1108, 706, 1256)),
     (
         "35_note_sparkles",
         [(700, 1120, 775, 1198), (701, 1192, 741, 1249), (772, 1123, 811, 1167)],
