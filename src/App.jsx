@@ -51,15 +51,32 @@ function loadImage(src) {
 
 function scrollBoardIntoView(boardElement) {
   boardElement?.scrollIntoView({
-    behavior: "smooth",
+    behavior: "auto",
     block: "center",
     inline: "nearest",
   });
 }
 
+function safelySetPointerCapture(pointerRef) {
+  try {
+    pointerRef?.target?.setPointerCapture?.(pointerRef.pointerId);
+  } catch {
+    // Some mobile browsers cancel pointer capture while scrolling.
+  }
+}
+
+function safelyReleasePointerCapture(pointerRef) {
+  try {
+    pointerRef?.target?.releasePointerCapture?.(pointerRef.pointerId);
+  } catch {
+    // Ignore missing capture handles.
+  }
+}
+
 export default function App() {
   const boardRef = useRef(null);
   const palettePressTimerRef = useRef(null);
+  const activePointerRef = useRef(null);
   const [assets, setAssets] = useState(initialAssets);
   const assetMap = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
   const [placedItems, setPlacedItems] = useState([]);
@@ -121,6 +138,7 @@ export default function App() {
             window.clearTimeout(palettePressTimerRef.current);
             palettePressTimerRef.current = null;
             event.preventDefault();
+            safelySetPointerCapture(activePointerRef.current);
             scrollBoardIntoView(boardRef.current);
             setInteraction({ ...interaction, locked: true, hasMoved: true });
             setDragPreview({ asset: interaction.asset, x: event.clientX, y: event.clientY });
@@ -177,6 +195,8 @@ export default function App() {
     const handlePointerUp = (event) => {
       window.clearTimeout(palettePressTimerRef.current);
       palettePressTimerRef.current = null;
+      safelyReleasePointerCapture(activePointerRef.current);
+      activePointerRef.current = null;
 
       if (interaction.type === "palette" && boardRef.current) {
         if (interaction.cancelled) {
@@ -198,12 +218,10 @@ export default function App() {
 
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
-    window.addEventListener("pointercancel", handlePointerUp);
 
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
-      window.removeEventListener("pointercancel", handlePointerUp);
     };
   }, [interaction, assetMap]);
 
@@ -245,6 +263,7 @@ export default function App() {
     setInteraction({
       type: "palette",
       asset,
+      pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       hasMoved: false,
@@ -255,7 +274,12 @@ export default function App() {
     if (isTouch) {
       const pointerX = event.clientX;
       const pointerY = event.clientY;
+      activePointerRef.current = {
+        pointerId: event.pointerId,
+        target: event.currentTarget,
+      };
       palettePressTimerRef.current = window.setTimeout(() => {
+        safelySetPointerCapture(activePointerRef.current);
         scrollBoardIntoView(boardRef.current);
         setInteraction((current) =>
           current?.type === "palette" && !current.cancelled
