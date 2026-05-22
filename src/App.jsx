@@ -51,6 +51,7 @@ function loadImage(src) {
 
 export default function App() {
   const boardRef = useRef(null);
+  const palettePressTimerRef = useRef(null);
   const [assets, setAssets] = useState(initialAssets);
   const assetMap = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
   const [placedItems, setPlacedItems] = useState([]);
@@ -93,9 +94,32 @@ export default function App() {
 
     const handlePointerMove = (event) => {
       if (interaction.type === "palette") {
+        const dx = event.clientX - interaction.startX;
+        const dy = event.clientY - interaction.startY;
         const moved =
-          Math.abs(event.clientX - interaction.startX) > 6 ||
-          Math.abs(event.clientY - interaction.startY) > 6;
+          Math.abs(dx) > 6 ||
+          Math.abs(dy) > 6;
+
+        if (!interaction.locked) {
+          if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) {
+            window.clearTimeout(palettePressTimerRef.current);
+            palettePressTimerRef.current = null;
+            setInteraction({ ...interaction, cancelled: true, hasMoved: true });
+            setDragPreview(null);
+            return;
+          }
+
+          if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+            window.clearTimeout(palettePressTimerRef.current);
+            palettePressTimerRef.current = null;
+            event.preventDefault();
+            setInteraction({ ...interaction, locked: true, hasMoved: true });
+            setDragPreview({ asset: interaction.asset, x: event.clientX, y: event.clientY });
+          }
+          return;
+        }
+
+        event.preventDefault();
         if (moved && !interaction.hasMoved) {
           setInteraction({ ...interaction, hasMoved: true });
         }
@@ -142,11 +166,20 @@ export default function App() {
     };
 
     const handlePointerUp = (event) => {
+      window.clearTimeout(palettePressTimerRef.current);
+      palettePressTimerRef.current = null;
+
       if (interaction.type === "palette" && boardRef.current) {
+        if (interaction.cancelled) {
+          setInteraction(null);
+          setDragPreview(null);
+          return;
+        }
+
         const point = pointerToBoard(event, boardRef.current);
-        if (point.inside) {
+        if (interaction.locked && point.inside) {
           addItem(interaction.asset, point.x, point.y);
-        } else if (!interaction.hasMoved) {
+        } else if (!interaction.locked && !interaction.hasMoved) {
           addItem(interaction.asset);
         }
       }
@@ -193,15 +226,35 @@ export default function App() {
   }
 
   function beginPaletteDrag(event, asset) {
-    event.preventDefault();
+    window.clearTimeout(palettePressTimerRef.current);
+
+    const isTouch = event.pointerType === "touch";
+    if (!isTouch) {
+      event.preventDefault();
+    }
+
     setInteraction({
       type: "palette",
       asset,
       startX: event.clientX,
       startY: event.clientY,
       hasMoved: false,
+      locked: !isTouch,
+      cancelled: false,
     });
-    setDragPreview({ asset, x: event.clientX, y: event.clientY });
+
+    if (isTouch) {
+      palettePressTimerRef.current = window.setTimeout(() => {
+        setInteraction((current) =>
+          current?.type === "palette" && !current.cancelled
+            ? { ...current, locked: true, hasMoved: true }
+            : current,
+        );
+        setDragPreview({ asset, x: event.clientX, y: event.clientY });
+      }, 220);
+    } else {
+      setDragPreview({ asset, x: event.clientX, y: event.clientY });
+    }
   }
 
   function beginMove(event, item) {
@@ -267,8 +320,7 @@ export default function App() {
     <main className="app">
       <header className="topbar">
         <div>
-          <h1>Item Composer</h1>
-          <p>{assets.length} items · {placedItems.length} placed</p>
+          <h1>楓之谷 UNIQLO 客製 T-shirt 模擬器</h1>
         </div>
         <div className="actions">
           <button type="button" onClick={removeSelected} disabled={!selectedId}>
@@ -356,6 +408,8 @@ export default function App() {
           <img src={dragPreview.asset.src} alt="" />
         </div>
       )}
+
+      <footer className="copyright">圖片素材版權皆為 NEXON 所有。</footer>
     </main>
   );
 }

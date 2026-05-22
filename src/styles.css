@@ -22,7 +22,7 @@ button {
 
 .app {
   min-height: 100vh;
-  padding: 14px;
+  padding: 14px 22px 28px;
 }
 
 .topbar {
@@ -30,11 +30,16 @@ button {
   position: sticky;
   top: 0;
   z-index: 10;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0 14px;
   background: #eef1f3;
+}
+
+.topbar > div:first-child {
+  min-width: 0;
+  flex: 1;
 }
 
 .topbar h1 {
@@ -51,6 +56,7 @@ button {
 
 .actions {
   display: flex;
+  flex-shrink: 0;
   gap: 8px;
 }
 
@@ -79,11 +85,15 @@ button {
 .workspace {
   display: grid;
   gap: 14px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .board {
   position: relative;
-  width: min(calc(100vw - 28px), 720px);
+  width: 100%;
+  max-width: 720px;
   aspect-ratio: 1;
   overflow: hidden;
   border: 2px solid #202225;
@@ -101,7 +111,7 @@ button {
     -8px 0;
   background-size: 16px 16px;
   box-shadow: 0 8px 24px rgb(31 35 40 / 12%);
-  touch-action: none;
+  touch-action: pan-y;
 }
 
 .placed-item {
@@ -166,6 +176,7 @@ button {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   padding: 4px 0 12px;
+  touch-action: pan-y;
 }
 
 .asset-button {
@@ -177,7 +188,7 @@ button {
   border-radius: 8px;
   background: #ffffff;
   cursor: grab;
-  touch-action: none;
+  touch-action: pan-y;
 }
 
 .asset-button:active {
@@ -206,6 +217,15 @@ button {
   object-fit: contain;
 }
 
+.copyright {
+  max-width: 720px;
+  margin: 18px auto 0;
+  color: #61676f;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
 @media (min-width: 900px) {
   .app {
     padding: 24px;
@@ -220,6 +240,7 @@ button {
     grid-template-columns: minmax(480px, 720px) 292px;
     align-items: start;
     justify-content: center;
+    max-width: 1040px;
   }
 
   .board {
@@ -243,5 +264,9 @@ button {
   .asset-button img {
     max-width: 70px;
     max-height: 70px;
+  }
+
+  .copyright {
+    max-width: 1040px;
   }
 }
