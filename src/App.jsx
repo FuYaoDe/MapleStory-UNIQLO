@@ -49,40 +49,15 @@ function loadImage(src) {
   });
 }
 
-function scrollBoardIntoView(boardElement) {
-  boardElement?.scrollIntoView({
-    behavior: "auto",
-    block: "center",
-    inline: "nearest",
-  });
-}
-
-function safelySetPointerCapture(pointerRef) {
-  try {
-    pointerRef?.target?.setPointerCapture?.(pointerRef.pointerId);
-  } catch {
-    // Some mobile browsers cancel pointer capture while scrolling.
-  }
-}
-
-function safelyReleasePointerCapture(pointerRef) {
-  try {
-    pointerRef?.target?.releasePointerCapture?.(pointerRef.pointerId);
-  } catch {
-    // Ignore missing capture handles.
-  }
-}
-
 export default function App() {
   const boardRef = useRef(null);
-  const palettePressTimerRef = useRef(null);
-  const activePointerRef = useRef(null);
+  const toastTimerRef = useRef(null);
   const [assets, setAssets] = useState(initialAssets);
   const assetMap = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
   const [placedItems, setPlacedItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [interaction, setInteraction] = useState(null);
-  const [dragPreview, setDragPreview] = useState(null);
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -118,42 +93,6 @@ export default function App() {
     }
 
     const handlePointerMove = (event) => {
-      if (interaction.type === "palette") {
-        const dx = event.clientX - interaction.startX;
-        const dy = event.clientY - interaction.startY;
-        const moved =
-          Math.abs(dx) > 6 ||
-          Math.abs(dy) > 6;
-
-        if (!interaction.locked) {
-          if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) {
-            window.clearTimeout(palettePressTimerRef.current);
-            palettePressTimerRef.current = null;
-            setInteraction({ ...interaction, cancelled: true, hasMoved: true });
-            setDragPreview(null);
-            return;
-          }
-
-          if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
-            window.clearTimeout(palettePressTimerRef.current);
-            palettePressTimerRef.current = null;
-            event.preventDefault();
-            safelySetPointerCapture(activePointerRef.current);
-            scrollBoardIntoView(boardRef.current);
-            setInteraction({ ...interaction, locked: true, hasMoved: true });
-            setDragPreview({ asset: interaction.asset, x: event.clientX, y: event.clientY });
-          }
-          return;
-        }
-
-        event.preventDefault();
-        if (moved && !interaction.hasMoved) {
-          setInteraction({ ...interaction, hasMoved: true });
-        }
-        setDragPreview({ asset: interaction.asset, x: event.clientX, y: event.clientY });
-        return;
-      }
-
       const board = boardRef.current;
       if (!board) {
         return;
@@ -192,28 +131,8 @@ export default function App() {
       }
     };
 
-    const handlePointerUp = (event) => {
-      window.clearTimeout(palettePressTimerRef.current);
-      palettePressTimerRef.current = null;
-      safelyReleasePointerCapture(activePointerRef.current);
-      activePointerRef.current = null;
-
-      if (interaction.type === "palette" && boardRef.current) {
-        if (interaction.cancelled) {
-          setInteraction(null);
-          setDragPreview(null);
-          return;
-        }
-
-        const point = pointerToBoard(event, boardRef.current);
-        if (interaction.locked && point.inside) {
-          addItem(interaction.asset, point.x, point.y);
-        } else if (!interaction.locked && !interaction.hasMoved) {
-          addItem(interaction.asset);
-        }
-      }
+    const handlePointerUp = () => {
       setInteraction(null);
-      setDragPreview(null);
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -224,6 +143,13 @@ export default function App() {
       window.removeEventListener("pointerup", handlePointerUp);
     };
   }, [interaction, assetMap]);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(toastTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -252,45 +178,25 @@ export default function App() {
     setSelectedId(id);
   }
 
-  function beginPaletteDrag(event, asset) {
-    window.clearTimeout(palettePressTimerRef.current);
+  function addItemAtRandomPosition(asset) {
+    const width = DEFAULT_ITEM_WIDTH;
+    const height = width / asset.aspect;
+    const maxX = Math.max(0, BOARD_UNITS - width);
+    const maxY = Math.max(0, BOARD_UNITS - height);
+    addItem(asset, Math.random() * maxX + width / 2, Math.random() * maxY + height / 2);
+  }
 
-    const isTouch = event.pointerType === "touch";
-    if (!isTouch) {
-      event.preventDefault();
-    }
+  function showAddedToast() {
+    window.clearTimeout(toastTimerRef.current);
+    setToastMessage("已成功加上");
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage("");
+    }, 1800);
+  }
 
-    setInteraction({
-      type: "palette",
-      asset,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      hasMoved: false,
-      locked: !isTouch,
-      cancelled: false,
-    });
-
-    if (isTouch) {
-      const pointerX = event.clientX;
-      const pointerY = event.clientY;
-      activePointerRef.current = {
-        pointerId: event.pointerId,
-        target: event.currentTarget,
-      };
-      palettePressTimerRef.current = window.setTimeout(() => {
-        safelySetPointerCapture(activePointerRef.current);
-        scrollBoardIntoView(boardRef.current);
-        setInteraction((current) =>
-          current?.type === "palette" && !current.cancelled
-            ? { ...current, locked: true, hasMoved: true }
-            : current,
-        );
-        setDragPreview({ asset, x: pointerX, y: pointerY });
-      }, 220);
-    } else {
-      setDragPreview({ asset, x: event.clientX, y: event.clientY });
-    }
+  function handlePaletteClick(asset) {
+    addItemAtRandomPosition(asset);
+    showAddedToast();
   }
 
   function beginMove(event, item) {
@@ -430,7 +336,7 @@ export default function App() {
               type="button"
               key={asset.id}
               className="asset-button"
-              onPointerDown={(event) => beginPaletteDrag(event, asset)}
+              onClick={() => handlePaletteClick(asset)}
               title={asset.label}
             >
               <img src={asset.src} alt={asset.label} draggable="false" />
@@ -439,11 +345,9 @@ export default function App() {
         </aside>
       </section>
 
-      {dragPreview && (
-        <div className="drag-preview" style={{ left: dragPreview.x, top: dragPreview.y }}>
-          <img src={dragPreview.asset.src} alt="" />
-        </div>
-      )}
+      <div className={`toast ${toastMessage ? "visible" : ""}`} role="status" aria-live="polite">
+        {toastMessage}
+      </div>
 
       <footer className="copyright">圖片素材版權皆為 NEXON 所有。</footer>
     </main>
